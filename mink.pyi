@@ -6,6 +6,14 @@ class Vec2:
 
     def __new__(cls, *args, **kwargs) -> Vec2: ...
 
+class Camera:
+    size: Vec2 | None
+    position: Vec2
+    rotation: float
+    zoom: float
+
+    def __new__(cls, *args, **kwargs) -> Camera: ...
+
 class Texture:
     pass
 
@@ -15,6 +23,7 @@ class Assets:
     def texture(self, path: str) -> Texture: ...
 
 class Draw:
+    def set_camera(self, camera: Camera | None) -> None: ...
     def sprite(
         self,
         texture: Texture,

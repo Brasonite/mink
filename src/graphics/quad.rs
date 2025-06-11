@@ -16,10 +16,10 @@ impl Quad {
             .create_buffer_init(&wgpu::util::BufferInitDescriptor {
                 label: Some("Quad vertex buffer"),
                 contents: bytemuck::cast_slice(&[
-                    Vertex::new([-0.5, -0.5], [0.0, 0.0]),
-                    Vertex::new([0.5, -0.5], [1.0, 0.0]),
-                    Vertex::new([0.5, 0.5], [1.0, 1.0]),
-                    Vertex::new([-0.5, 0.5], [0.0, 1.0]),
+                    Vertex::new([-0.5, -0.5], [0.0, 1.0]),
+                    Vertex::new([0.5, -0.5], [1.0, 1.0]),
+                    Vertex::new([0.5, 0.5], [1.0, 0.0]),
+                    Vertex::new([-0.5, 0.5], [0.0, 0.0]),
                 ]),
                 usage: wgpu::BufferUsages::VERTEX,
             });
