@@ -4,17 +4,17 @@ use pyo3::prelude::*;
 
 use crate::{
     assets::texture::Texture,
-    graphics::{builtin::VideoBuiltins, quad::Quad, stack::VideoStack, viewport::Viewport},
+    graphics::{builtin::VideoBuiltins, camera::Camera, quad::Quad, stack::VideoStack},
     math::{matrices::model_matrix, vectors::Vec2},
 };
 
 #[repr(C)]
 #[derive(Debug, Clone, Copy, bytemuck::Pod, bytemuck::Zeroable)]
-pub struct DrawInstance {
-    pub model: [[f32; 4]; 4],
+pub struct RawInstance {
+    pub matrix: [[f32; 4]; 4],
 }
 
-impl DrawInstance {
+impl RawInstance {
     pub const fn buffer_layout() -> wgpu::VertexBufferLayout<'static> {
         wgpu::VertexBufferLayout {
             array_stride: std::mem::size_of::<Self>() as wgpu::BufferAddress,
@@ -46,6 +46,20 @@ impl DrawInstance {
 }
 
 #[derive(Debug, Clone)]
+pub struct DrawInstance {
+    pub camera: Camera,
+    pub model: glam::Mat4,
+}
+
+impl DrawInstance {
+    pub fn into_raw(self, viewport_size: [u32; 2]) -> RawInstance {
+        RawInstance {
+            matrix: (self.camera.matrix(viewport_size) * self.model).to_cols_array_2d(),
+        }
+    }
+}
+
+#[derive(Debug, Clone)]
 pub enum DrawAttachment {
     Pipeline(Arc<wgpu::RenderPipeline>),
     Texture(Arc<wgpu::BindGroup>),
@@ -55,7 +69,7 @@ impl DrawAttachment {
     pub fn attach(&self, pass: &mut wgpu::RenderPass) {
         match self {
             Self::Pipeline(pipeline) => pass.set_pipeline(pipeline),
-            Self::Texture(binding) => pass.set_bind_group(1, binding.as_ref(), &[]),
+            Self::Texture(binding) => pass.set_bind_group(0, binding.as_ref(), &[]),
         }
     }
 }
@@ -79,8 +93,9 @@ impl DrawBatch {
         attachments: Vec<DrawAttachment>,
         instances: Vec<DrawInstance>,
     ) -> Self {
-        let size = std::mem::size_of_val(instances.as_slice()) as wgpu::BufferAddress;
         let count = instances.len() as u32;
+        let size = std::mem::size_of::<RawInstance>() as wgpu::BufferAddress
+            * count as wgpu::BufferAddress;
 
         let buffer = device.create_buffer(&wgpu::BufferDescriptor {
             label: Some(label),
@@ -106,7 +121,8 @@ impl DrawBatch {
     }
 
     pub fn write(&mut self, video: &VideoStack) -> u32 {
-        let size = std::mem::size_of_val(self.instances.as_slice()) as wgpu::BufferAddress;
+        let size = std::mem::size_of::<RawInstance>() as wgpu::BufferAddress
+            * self.count as wgpu::BufferAddress;
         if size > self.size {
             self.buffer = video.device.create_buffer(&wgpu::BufferDescriptor {
                 label: Some(&self.label),
@@ -117,11 +133,16 @@ impl DrawBatch {
         }
 
         if size > 0 {
-            video.queue.write_buffer(
-                &self.buffer,
-                0,
-                bytemuck::cast_slice(self.instances.drain(..).as_slice()),
-            );
+            let viewport_size = [video.config.width, video.config.height];
+            let instances: Vec<RawInstance> = self
+                .instances
+                .drain(..)
+                .map(|x| x.into_raw(viewport_size))
+                .collect();
+
+            video
+                .queue
+                .write_buffer(&self.buffer, 0, bytemuck::cast_slice(&instances));
         }
 
         if self.count > 0 {
@@ -184,29 +205,25 @@ pub struct Draw {
     pub device: Arc<wgpu::Device>,
     pub builtins: Arc<VideoBuiltins>,
     pub quad: Quad,
-    pub viewport: Viewport,
+    pub default_camera: Camera,
     pub batcher: Batcher,
 }
 
 impl Draw {
     pub fn new(video: &VideoStack, builtins: Arc<VideoBuiltins>) -> Self {
         let quad = Quad::new(video);
-        let viewport = Viewport::new(video, &builtins);
 
         Self {
             device: Arc::clone(&video.device),
             builtins,
             quad,
-            viewport,
+            default_camera: Camera::new(),
             batcher: Batcher::new(),
         }
     }
 
     pub fn submit(&mut self, video: &VideoStack, pass: &mut wgpu::RenderPass) {
-        self.viewport.update(video);
-
         self.quad.apply(pass);
-        self.viewport.apply(pass);
 
         for batch in self.batcher.batches.values_mut() {
             let count = batch.write(video);
@@ -244,12 +261,12 @@ impl Draw {
                 DrawAttachment::Texture(Arc::clone(&texture.binding)),
             ],
             DrawInstance {
+                camera: self.default_camera.clone(),
                 model: model_matrix(
                     &position.into_glam(),
                     rotation.unwrap_or(0.0),
                     &(*texture.size * scale.map(|x| x.into()).unwrap_or(glam::Vec2::ONE)),
-                )
-                .to_cols_array_2d(),
+                ),
             },
         );
     }

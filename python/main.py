@@ -16,11 +16,11 @@ def load():
 def update():
     global bunny_start
     if mink.input.key_down("ArrowDown"):
-        bunny_start += 100.0 * mink.time.delta()
-    if mink.input.key_down("ArrowUp"):
         bunny_start -= 100.0 * mink.time.delta()
+    if mink.input.key_down("ArrowUp"):
+        bunny_start += 100.0 * mink.time.delta()
 
-    bunny_start += mink.input.scroll().y * 50.0
+    bunny_start -= mink.input.scroll().y * 50.0
 
 
 def draw():

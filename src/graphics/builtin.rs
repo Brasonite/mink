@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use crate::{
     graphics::{
-        draw::DrawInstance, pipeline::GraphicsPipeline, stack::VideoStack, target::RenderTarget,
+        draw::RawInstance, pipeline::GraphicsPipeline, stack::VideoStack, target::RenderTarget,
     },
     math::vertex::Vertex,
 };
@@ -79,7 +79,7 @@ impl BuiltinPipelines {
                 .device
                 .create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
                     label: Some("Sprite pipeline layout"),
-                    bind_group_layouts: &[&layouts.camera, &layouts.texture],
+                    bind_group_layouts: &[&layouts.texture],
                     push_constant_ranges: &[],
                 });
 
@@ -92,7 +92,7 @@ impl BuiltinPipelines {
                         module: &shader,
                         entry_point: Some("vs_main"),
                         compilation_options: wgpu::PipelineCompilationOptions::default(),
-                        buffers: &[Vertex::buffer_layout(), DrawInstance::buffer_layout()],
+                        buffers: &[Vertex::buffer_layout(), RawInstance::buffer_layout()],
                     },
                     fragment: Some(wgpu::FragmentState {
                         module: &shader,
