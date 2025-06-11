@@ -1,0 +1,25 @@
+[package]
+name = "mink"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+name = "mink"
+crate-type = ["cdylib"]
+
+[dependencies]
+bytemuck = { version = "1.23.0", features = ["derive"] }
+dashmap = "6.1.0"
+glam = "0.30.3"
+image = { version = "0.25.6", default-features = false, features = [
+    "rayon",
+    "bmp",
+    "png",
+    "jpeg",
+] }
+mink_scripts = { path = "./mink_scripts" }
+mink_shaders = { path = "./mink_shaders" }
+pollster = "0.4.0"
+pyo3 = "0.24.0"
+wgpu = "25.0.2"
+winit = "0.30.11"
