@@ -23,7 +23,7 @@ impl Camera {
         };
 
         let (width, height) = {
-            let zoom_multiplier = 1.0 / self.zoom;
+            let zoom_multiplier = 1.0 / self.zoom.max(0.00000001);
             (width * zoom_multiplier, height * zoom_multiplier)
         };
 
