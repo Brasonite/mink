@@ -22,11 +22,17 @@ impl Camera {
             None => (viewport_size[0] as f32, viewport_size[1] as f32),
         };
 
-        let view = glam::Mat4::look_to_lh(
-            glam::Vec3::new(self.position.x, self.position.y, -1.0),
-            glam::Vec3::Z,
-            glam::Vec3::Y,
-        );
+        let (width, height) = {
+            let zoom_multiplier = 1.0 / self.zoom;
+            (width * zoom_multiplier, height * zoom_multiplier)
+        };
+
+        let view = glam::Mat4::from_rotation_z(self.rotation)
+            * glam::Mat4::look_to_lh(
+                glam::Vec3::new(self.position.x, self.position.y, -1.0),
+                glam::Vec3::Z,
+                glam::Vec3::Y,
+            );
 
         let projection = glam::Mat4::orthographic_lh(
             -width / 2.0,
