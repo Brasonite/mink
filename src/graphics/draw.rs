@@ -206,6 +206,7 @@ pub struct Draw {
     pub builtins: Arc<VideoBuiltins>,
     pub quad: Quad,
     pub default_camera: Camera,
+    pub current_camera: Option<Camera>,
     pub batcher: Batcher,
 }
 
@@ -218,6 +219,7 @@ impl Draw {
             builtins,
             quad,
             default_camera: Camera::new(),
+            current_camera: None,
             batcher: Batcher::new(),
         }
     }
@@ -246,6 +248,10 @@ impl Draw {
 
 #[pymethods]
 impl Draw {
+    pub fn set_camera(&mut self, camera: Option<&Camera>) {
+        self.current_camera = camera.map(|x| x.clone());
+    }
+
     pub fn sprite(
         &mut self,
         texture: &Texture,
@@ -261,7 +267,10 @@ impl Draw {
                 DrawAttachment::Texture(Arc::clone(&texture.binding)),
             ],
             DrawInstance {
-                camera: self.default_camera.clone(),
+                camera: self
+                    .current_camera
+                    .clone()
+                    .unwrap_or(self.default_camera.clone()),
                 model: model_matrix(
                     &position.into_glam(),
                     rotation.unwrap_or(0.0),
