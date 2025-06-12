@@ -1,5 +1,20 @@
 from collections.abc import Callable
 
+class Color:
+    r: float
+    g: float
+    b: float
+    a: float
+
+    @classmethod
+    def rgb(cls, r: float, g: float, b: float) -> Color: ...
+    @classmethod
+    def rgba(cls, r: float, g: float, b: float, a: float) -> Color: ...
+    @classmethod
+    def hsv(cls, h: float, s: float, v: float) -> Color: ...
+    @classmethod
+    def hsva(cls, h: float, s: float, v: float, a: float) -> Color: ...
+
 class Vec2:
     x: float
     y: float
