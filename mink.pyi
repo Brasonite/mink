@@ -14,6 +14,7 @@ class Color:
     def hsv(cls, h: float, s: float, v: float) -> Color: ...
     @classmethod
     def hsva(cls, h: float, s: float, v: float, a: float) -> Color: ...
+    def as_array(self) -> list[float]: ...
 
 class Vec2:
     x: float
@@ -45,6 +46,7 @@ class Draw:
         position: Vec2,
         rotation: float | None,
         scale: Vec2 | None,
+        tint: Color | None,
     ) -> None: ...
 
 class Input:

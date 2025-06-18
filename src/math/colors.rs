@@ -1,6 +1,7 @@
 use pyo3::{prelude::*, types::PyType};
 
 #[pyclass]
+#[derive(Debug, Clone)]
 pub struct Color {
     #[pyo3(get, set)]
     pub r: f32,
@@ -13,6 +14,13 @@ pub struct Color {
 }
 
 impl Color {
+    pub const WHITE: Self = Self {
+        r: 1.0,
+        g: 1.0,
+        b: 1.0,
+        a: 1.0,
+    };
+
     pub fn from_rgb(r: f32, g: f32, b: f32) -> Self {
         Self::from_rgba(r, g, b, 1.0)
     }
@@ -90,6 +98,10 @@ impl Color {
     #[classmethod]
     pub fn hsva(_: &Bound<PyType>, h: f32, s: f32, v: f32, a: f32) -> Self {
         Self::from_hsva(h, s, v, a)
+    }
+
+    pub fn as_array(&self) -> [f32; 4] {
+        [self.r, self.g, self.b, self.a]
     }
 
     pub fn __str__(&self) -> String {
