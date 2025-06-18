@@ -45,6 +45,29 @@ impl Camera {
 
         projection * view
     }
+
+    pub fn world_to_screen_transform(&self, viewport_size: glam::Vec2) -> glam::Affine2 {
+        let (width, height) = match self.size {
+            Some(size) => (size.x, size.y),
+            None => (viewport_size.x, viewport_size.y),
+        };
+
+        let (width, height) = {
+            let zoom_multiplier = 1.0 / self.zoom.max(0.00000001);
+            (width * zoom_multiplier, height * zoom_multiplier)
+        };
+
+        let scale = glam::Vec2::new(viewport_size.x / width, -viewport_size.y / height);
+
+        glam::Affine2::from_translation(viewport_size / 2.0)
+            * glam::Affine2::from_scale(scale)
+            * glam::Affine2::from_translation(-self.position.into_glam())
+            * glam::Affine2::from_angle(self.rotation)
+    }
+
+    pub fn screen_to_world_transform(&self, viewport_size: glam::Vec2) -> glam::Affine2 {
+        self.world_to_screen_transform(viewport_size).inverse()
+    }
 }
 
 #[pymethods]
@@ -57,5 +80,17 @@ impl Camera {
             rotation: 0.0,
             zoom: 1.0,
         }
+    }
+
+    pub fn project(&self, position: Vec2, window_size: Vec2) -> Vec2 {
+        self.screen_to_world_transform(window_size.into_glam())
+            .transform_point2(position.into_glam())
+            .into()
+    }
+
+    pub fn unproject(&self, position: Vec2, window_size: Vec2) -> Vec2 {
+        self.world_to_screen_transform(window_size.into_glam())
+            .transform_point2(position.into_glam())
+            .into()
     }
 }
