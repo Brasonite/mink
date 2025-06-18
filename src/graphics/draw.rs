@@ -5,13 +5,14 @@ use pyo3::prelude::*;
 use crate::{
     assets::texture::Texture,
     graphics::{builtin::VideoBuiltins, camera::Camera, quad::Quad, stack::VideoStack},
-    math::{matrices::model_matrix, vectors::Vec2},
+    math::{colors::Color, matrices::model_matrix, vectors::Vec2},
 };
 
 #[repr(C)]
 #[derive(Debug, Clone, Copy, bytemuck::Pod, bytemuck::Zeroable)]
 pub struct RawInstance {
     pub matrix: [[f32; 4]; 4],
+    pub color: [f32; 4],
 }
 
 impl RawInstance {
@@ -40,6 +41,11 @@ impl RawInstance {
                     shader_location: 5,
                     format: wgpu::VertexFormat::Float32x4,
                 },
+                wgpu::VertexAttribute {
+                    offset: std::mem::size_of::<[f32; 16]>() as wgpu::BufferAddress,
+                    shader_location: 6,
+                    format: wgpu::VertexFormat::Float32x4,
+                },
             ],
         }
     }
@@ -49,12 +55,14 @@ impl RawInstance {
 pub struct DrawInstance {
     pub camera: Camera,
     pub model: glam::Mat4,
+    pub color: Color,
 }
 
 impl DrawInstance {
     pub fn into_raw(self, viewport_size: [u32; 2]) -> RawInstance {
         RawInstance {
             matrix: (self.camera.matrix(viewport_size) * self.model).to_cols_array_2d(),
+            color: self.color.as_array(),
         }
     }
 }
@@ -258,6 +266,7 @@ impl Draw {
         position: &Vec2,
         rotation: Option<f32>,
         scale: Option<Vec2>,
+        tint: Option<Color>,
     ) {
         self.batcher.add(
             &self.device,
@@ -276,6 +285,7 @@ impl Draw {
                     rotation.unwrap_or(0.0),
                     &(*texture.size * scale.map(|x| x.into()).unwrap_or(glam::Vec2::ONE)),
                 ),
+                color: tint.unwrap_or(Color::WHITE),
             },
         );
     }
