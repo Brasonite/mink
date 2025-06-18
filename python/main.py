@@ -47,9 +47,7 @@ def draw():
     for i in range(int(bunny_start), int(bunny_start) + 1000, 50):
         mink.draw.sprite(bunny, mink.Vec2(i, i), i / 200, None, None)
 
-    mink.draw.sprite(
-        bunny, mink.input.mouse_pos(), None, None, mink.Color.rgb(1.0, 0.0, 0.0)
-    )
+    mink.draw.sprite(bunny, mink.input.mouse_pos(), None, None, mink.Color.RED)
 
 
 def exit():
