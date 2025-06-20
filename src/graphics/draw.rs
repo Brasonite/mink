@@ -53,15 +53,15 @@ impl RawInstance {
 
 #[derive(Debug, Clone)]
 pub struct DrawInstance {
-    pub camera: Camera,
+    pub camera: glam::Mat4,
     pub model: glam::Mat4,
     pub color: Color,
 }
 
 impl DrawInstance {
-    pub fn into_raw(self, viewport_size: [u32; 2]) -> RawInstance {
+    pub fn into_raw(self) -> RawInstance {
         RawInstance {
-            matrix: (self.camera.matrix(viewport_size) * self.model).to_cols_array_2d(),
+            matrix: (self.camera * self.model).to_cols_array_2d(),
             color: self.color.as_array(),
         }
     }
@@ -141,12 +141,8 @@ impl DrawBatch {
         }
 
         if size > 0 {
-            let viewport_size = [video.config.width, video.config.height];
-            let instances: Vec<RawInstance> = self
-                .instances
-                .drain(..)
-                .map(|x| x.into_raw(viewport_size))
-                .collect();
+            let instances: Vec<RawInstance> =
+                self.instances.drain(..).map(|x| x.into_raw()).collect();
 
             video
                 .queue
@@ -213,23 +209,30 @@ pub struct Draw {
     pub device: Arc<wgpu::Device>,
     pub builtins: Arc<VideoBuiltins>,
     pub quad: Quad,
-    pub default_camera: Camera,
-    pub current_camera: Option<Camera>,
+    pub viewport_size: glam::Vec2,
+    pub default_camera: glam::Mat4,
+    pub current_camera: Option<glam::Mat4>,
     pub batcher: Batcher,
 }
 
 impl Draw {
-    pub fn new(video: &VideoStack, builtins: Arc<VideoBuiltins>) -> Self {
+    pub fn new<'a>(video: &VideoStack, builtins: Arc<VideoBuiltins>) -> Self {
         let quad = Quad::new(video);
 
         Self {
             device: Arc::clone(&video.device),
             builtins,
             quad,
-            default_camera: Camera::new(),
+            viewport_size: glam::Vec2::new(video.config.width as f32, video.config.height as f32),
+            default_camera: glam::Mat4::IDENTITY,
             current_camera: None,
             batcher: Batcher::new(),
         }
+    }
+
+    pub fn begin_frame(&mut self, video: &VideoStack) {
+        self.viewport_size = glam::Vec2::new(video.config.width as f32, video.config.height as f32);
+        self.default_camera = Camera::build_matrix(self.viewport_size, glam::Vec2::ZERO, 0.0, 1.0);
     }
 
     pub fn submit(&mut self, video: &VideoStack, pass: &mut wgpu::RenderPass) {
@@ -256,8 +259,8 @@ impl Draw {
 
 #[pymethods]
 impl Draw {
-    pub fn set_camera(&mut self, camera: Option<&Camera>) {
-        self.current_camera = camera.map(|x| x.clone());
+    pub fn set_camera<'a>(&mut self, py: Python<'a>, camera: Option<&Camera>) {
+        self.current_camera = camera.map(|x| x.matrix(py, self.viewport_size));
     }
 
     pub fn sprite(
@@ -276,12 +279,9 @@ impl Draw {
                 DrawAttachment::Texture(Arc::clone(&texture.binding)),
             ],
             DrawInstance {
-                camera: self
-                    .current_camera
-                    .clone()
-                    .unwrap_or(self.default_camera.clone()),
+                camera: self.current_camera.unwrap_or(self.default_camera),
                 model: model_matrix(
-                    &position.into_glam(),
+                    &position,
                     rotation.unwrap_or(0.0),
                     &(*texture.size * scale.map(|x| x.into()).unwrap_or(glam::Vec2::ONE)),
                 ),

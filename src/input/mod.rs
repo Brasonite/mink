@@ -99,7 +99,7 @@ impl Input {
     }
 
     pub fn mouse_pos(&self) -> Vec2 {
-        self.mouse_pos
+        self.mouse_pos.clone()
     }
 
     pub fn mouse_down(&self, button: &str) -> bool {
@@ -121,6 +121,6 @@ impl Input {
     }
 
     pub fn scroll(&self) -> Vec2 {
-        self.mouse_scroll
+        self.mouse_scroll.clone()
     }
 }
