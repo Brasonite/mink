@@ -21,7 +21,7 @@ use crate::{
     windowing::Window as GlobalWindow,
 };
 struct Runtime<'a> {
-    python: Python<'a>,
+    py: Python<'a>,
 
     init_fn: &'a Bound<'a, PyFunction>,
     load_fn: &'a Bound<'a, PyFunction>,
@@ -53,7 +53,7 @@ impl<'a> Runtime<'a> {
         exit_fn: &'a Bound<PyFunction>,
     ) -> Self {
         Self {
-            python,
+            py: python,
             init_fn,
             load_fn,
             update_fn,
@@ -88,20 +88,20 @@ impl<'a> ApplicationHandler for Runtime<'a> {
         let builtins = Arc::new(VideoBuiltins::new(&video));
 
         let global_assets = Assets::new(&video, Arc::clone(&builtins))
-            .into_pyobject(self.python)
+            .into_pyobject(self.py)
             .unwrap();
         let global_draw = Draw::new(&video, Arc::clone(&builtins))
-            .into_pyobject(self.python)
+            .into_pyobject(self.py)
             .unwrap();
-        let global_input = Input::new().into_pyobject(self.python).unwrap();
-        let global_stats = Stats::new().into_pyobject(self.python).unwrap();
-        let global_time = Time::new().into_pyobject(self.python).unwrap();
+        let global_input = Input::new().into_pyobject(self.py).unwrap();
+        let global_stats = Stats::new().into_pyobject(self.py).unwrap();
+        let global_time = Time::new().into_pyobject(self.py).unwrap();
         let global_window = GlobalWindow::new(Arc::clone(&window))
-            .into_pyobject(self.python)
+            .into_pyobject(self.py)
             .unwrap();
 
         {
-            let locals = PyDict::new(self.python);
+            let locals = PyDict::new(self.py);
             locals.set_item("global_assets", &global_assets).unwrap();
             locals.set_item("global_draw", &global_draw).unwrap();
             locals.set_item("global_input", &global_input).unwrap();
@@ -109,7 +109,7 @@ impl<'a> ApplicationHandler for Runtime<'a> {
             locals.set_item("global_time", &global_time).unwrap();
             locals.set_item("global_window", &global_window).unwrap();
 
-            self.python
+            self.py
                 .run(
                     &CString::from_str(mink_scripts::SET_GLOBALS).unwrap(),
                     None,
@@ -156,21 +156,27 @@ impl<'a> ApplicationHandler for Runtime<'a> {
                 self.last_frame = Instant::now();
 
                 self.update_fn.call0().unwrap();
-                self.draw_fn.call0().unwrap();
 
-                let graphics = match self.video.as_mut() {
-                    Some(graphics) => graphics,
+                let video = match self.video.as_mut() {
+                    Some(video) => video,
                     None => return,
                 };
+
+                if let Some(draw) = self.global_draw.as_ref() {
+                    draw.borrow_mut().begin_frame(video);
+                }
+
+                self.draw_fn.call0().unwrap();
+
                 let mut draw = match self.global_draw.as_ref() {
                     Some(draw) => draw.borrow_mut(),
                     None => return,
                 };
 
-                if let Err(e) = graphics.submit(&mut draw) {
+                if let Err(e) = video.submit(&mut draw) {
                     match e {
                         wgpu::SurfaceError::Lost | wgpu::SurfaceError::Outdated => {
-                            graphics.resize([graphics.config.width, graphics.config.height])
+                            video.resize([video.config.width, video.config.height])
                         }
                         wgpu::SurfaceError::OutOfMemory | wgpu::SurfaceError::Other => {
                             println!("Out of memory!");
@@ -216,7 +222,7 @@ impl<'a> ApplicationHandler for Runtime<'a> {
     fn exiting(&mut self, _: &ActiveEventLoop) {
         self.exit_fn.call0().unwrap();
 
-        self.python
+        self.py
             .run(
                 &CString::from_str(mink_scripts::RESET_GLOBALS).unwrap(),
                 None,
