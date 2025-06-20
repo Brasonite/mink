@@ -19,6 +19,15 @@ def update():
     global bunny_start
     global camera
 
+    if mink.input.key_down("KeyS"):
+        camera.position.y -= 100.0 * mink.time.delta()
+    if mink.input.key_down("KeyW"):
+        camera.position.y += 100.0 * mink.time.delta()
+    if mink.input.key_down("KeyA"):
+        camera.position.x -= 100.0 * mink.time.delta()
+    if mink.input.key_down("KeyD"):
+        camera.position.x = camera.position.x + 100.0 * mink.time.delta()
+
     if mink.input.key_down("ArrowDown"):
         bunny_start -= 100.0 * mink.time.delta()
     if mink.input.key_down("ArrowUp"):

@@ -17,7 +17,7 @@ pub struct Camera {
 
 impl Camera {
     pub fn matrix(&self, viewport_size: [u32; 2]) -> glam::Mat4 {
-        let (width, height) = match self.size {
+        let (width, height) = match &self.size {
             Some(size) => (size.x, size.y),
             None => (viewport_size[0] as f32, viewport_size[1] as f32),
         };
@@ -47,7 +47,7 @@ impl Camera {
     }
 
     pub fn world_to_screen_transform(&self, viewport_size: glam::Vec2) -> glam::Affine2 {
-        let (width, height) = match self.size {
+        let (width, height) = match &self.size {
             Some(size) => (size.x, size.y),
             None => (viewport_size.x, viewport_size.y),
         };
@@ -61,8 +61,8 @@ impl Camera {
 
         glam::Affine2::from_translation(viewport_size / 2.0)
             * glam::Affine2::from_scale(scale)
-            * glam::Affine2::from_translation(-self.position.into_glam())
             * glam::Affine2::from_angle(self.rotation)
+            * glam::Affine2::from_translation(-*self.position)
     }
 
     pub fn screen_to_world_transform(&self, viewport_size: glam::Vec2) -> glam::Affine2 {
@@ -83,14 +83,14 @@ impl Camera {
     }
 
     pub fn project(&self, position: Vec2, window_size: Vec2) -> Vec2 {
-        self.screen_to_world_transform(window_size.into_glam())
-            .transform_point2(position.into_glam())
+        self.screen_to_world_transform(*window_size)
+            .transform_point2(*position)
             .into()
     }
 
     pub fn unproject(&self, position: Vec2, window_size: Vec2) -> Vec2 {
-        self.world_to_screen_transform(window_size.into_glam())
-            .transform_point2(position.into_glam())
+        self.world_to_screen_transform(*window_size)
+            .transform_point2(*position)
             .into()
     }
 }

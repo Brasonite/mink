@@ -1,5 +1,5 @@
 use pyo3::prelude::*;
-use std::ops;
+use std::ops::{Deref, DerefMut};
 
 #[derive(FromPyObject)]
 enum Vec2Multiplier {
@@ -18,46 +18,42 @@ enum Vec2Divider {
 }
 
 #[pyclass]
-#[derive(Debug, Clone, Copy)]
-pub struct Vec2 {
-    #[pyo3(get, set)]
-    pub x: f32,
-    #[pyo3(get, set)]
-    pub y: f32,
-}
-
-impl Vec2 {
-    pub fn into_glam(&self) -> glam::Vec2 {
-        glam::Vec2::new(self.x, self.y)
-    }
-}
+#[derive(Debug, Clone)]
+pub struct Vec2(pub glam::Vec2);
 
 #[pymethods]
 impl Vec2 {
-    #[classattr]
-    pub const ZERO: Self = Self { x: 0.0, y: 0.0 };
-    #[classattr]
-    pub const ONE: Self = Self { x: 1.0, y: 1.0 };
-    #[classattr]
-    pub const UP: Self = Self { x: 0.0, y: 1.0 };
-    #[classattr]
-    pub const DOWN: Self = Self { x: 0.0, y: -1.0 };
-    #[classattr]
-    pub const LEFT: Self = Self { x: -1.0, y: 0.0 };
-    #[classattr]
-    pub const RIGHT: Self = Self { x: 1.0, y: 0.0 };
-
     #[new]
     pub const fn new(x: f32, y: f32) -> Self {
-        Self { x, y }
+        Self(glam::Vec2::new(x, y))
+    }
+
+    #[getter]
+    fn get_x(&self) -> f32 {
+        self.0.x
+    }
+
+    #[setter]
+    fn set_x(&mut self, value: f32) {
+        self.0.x = value;
+    }
+
+    #[getter]
+    fn get_y(&self) -> f32 {
+        self.0.y
+    }
+
+    #[setter]
+    fn set_y(&mut self, value: f32) {
+        self.0.y = value;
     }
 
     pub fn length(&self) -> f32 {
-        self.into_glam().length()
+        self.0.length()
     }
 
     pub fn normalized(&self) -> Self {
-        self.into_glam().normalize_or_zero().into()
+        Self(self.0.normalize_or_zero())
     }
 
     fn __str__(&self) -> String {
@@ -69,167 +65,102 @@ impl Vec2 {
     }
 
     fn __add__(&self, rhs: &Self) -> Self {
-        *self + *rhs
+        Self(self.0 + rhs.0)
     }
 
     fn __iadd(&mut self, rhs: &Self) {
-        *self = *self + *rhs
+        self.0 = self.0 + rhs.0;
     }
 
     fn __sub__(&self, rhs: &Self) -> Self {
-        *self - *rhs
+        Self(self.0 - rhs.0)
     }
 
     fn __isub(&mut self, rhs: &Self) {
-        *self = *self - *rhs
+        self.0 = self.0 - rhs.0;
     }
 
     fn __mul__(&self, rhs: Vec2Multiplier) -> Self {
         match rhs {
-            Vec2Multiplier::Vec2(rhs) => *self * rhs,
-            Vec2Multiplier::Float(rhs) => *self * rhs,
+            Vec2Multiplier::Vec2(rhs) => Self(self.0 * rhs.0),
+            Vec2Multiplier::Float(rhs) => Self(self.0 * rhs),
         }
     }
 
     fn __imul__(&mut self, rhs: Vec2Multiplier) {
         match rhs {
             Vec2Multiplier::Vec2(rhs) => {
-                *self = *self * rhs;
+                self.0 = self.0 * rhs.0;
             }
             Vec2Multiplier::Float(rhs) => {
-                *self = *self * rhs;
+                self.0 = self.0 * rhs;
             }
         }
     }
 
     fn __truediv__(&self, rhs: Vec2Divider) -> Self {
         match rhs {
-            Vec2Divider::Vec2(rhs) => *self / rhs,
-            Vec2Divider::Float(rhs) => *self / rhs,
+            Vec2Divider::Vec2(rhs) => Self(self.0 / rhs.0),
+            Vec2Divider::Float(rhs) => Self(self.0 / rhs),
         }
     }
 
     fn __itruediv__(&mut self, rhs: Vec2Divider) {
         match rhs {
             Vec2Divider::Vec2(rhs) => {
-                *self = *self / rhs;
+                self.0 = self.0 / rhs.0;
             }
             Vec2Divider::Float(rhs) => {
-                *self = *self / rhs;
+                self.0 = self.0 / rhs;
             }
         }
     }
 
     fn __neg__(&self) -> Self {
-        -*self
+        Self(-self.0)
+    }
+
+    #[classattr]
+    pub const ZERO: Self = Self::new(0.0, 0.0);
+    #[classattr]
+    pub const ONE: Self = Self::new(1.0, 1.0);
+    #[classattr]
+    pub const UP: Self = Self::new(0.0, 1.0);
+    #[classattr]
+    pub const DOWN: Self = Self::new(0.0, -1.0);
+    #[classattr]
+    pub const LEFT: Self = Self::new(-1.0, 0.0);
+    #[classattr]
+    pub const RIGHT: Self = Self::new(1.0, 0.0);
+}
+
+impl Deref for Vec2 {
+    type Target = glam::Vec2;
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
+impl DerefMut for Vec2 {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.0
     }
 }
 
 impl ToString for Vec2 {
     fn to_string(&self) -> String {
-        format!("Vec2({:.2}, {:.2})", self.x, self.y)
+        self.0.to_string()
     }
 }
 
 impl From<glam::Vec2> for Vec2 {
     fn from(value: glam::Vec2) -> Self {
-        Self {
-            x: value.x,
-            y: value.y,
-        }
+        Self(value)
     }
 }
 
 impl Into<glam::Vec2> for Vec2 {
     fn into(self) -> glam::Vec2 {
-        glam::Vec2::new(self.x, self.y)
-    }
-}
-
-impl ops::Add<Vec2> for Vec2 {
-    type Output = Self;
-    fn add(self, rhs: Vec2) -> Self::Output {
-        (self.into_glam() + rhs.into_glam()).into()
-    }
-}
-
-impl ops::AddAssign<Vec2> for Vec2 {
-    fn add_assign(&mut self, rhs: Vec2) {
-        *self = *self + rhs
-    }
-}
-
-impl ops::Sub<Vec2> for Vec2 {
-    type Output = Self;
-    fn sub(self, rhs: Vec2) -> Self::Output {
-        (self.into_glam() - rhs.into_glam()).into()
-    }
-}
-
-impl ops::SubAssign<Vec2> for Vec2 {
-    fn sub_assign(&mut self, rhs: Vec2) {
-        *self = *self - rhs
-    }
-}
-
-impl ops::Mul<Vec2> for Vec2 {
-    type Output = Self;
-    fn mul(self, rhs: Vec2) -> Self::Output {
-        (self.into_glam() * rhs.into_glam()).into()
-    }
-}
-
-impl ops::Mul<f32> for Vec2 {
-    type Output = Self;
-    fn mul(self, rhs: f32) -> Self::Output {
-        (self.into_glam() * rhs).into()
-    }
-}
-
-impl ops::MulAssign<Vec2> for Vec2 {
-    fn mul_assign(&mut self, rhs: Vec2) {
-        *self = *self * rhs
-    }
-}
-
-impl ops::MulAssign<f32> for Vec2 {
-    fn mul_assign(&mut self, rhs: f32) {
-        *self = *self * rhs
-    }
-}
-
-impl ops::Div<Vec2> for Vec2 {
-    type Output = Self;
-    fn div(self, rhs: Vec2) -> Self::Output {
-        (self.into_glam() / rhs.into_glam()).into()
-    }
-}
-
-impl ops::Div<f32> for Vec2 {
-    type Output = Self;
-    fn div(self, rhs: f32) -> Self::Output {
-        (self.into_glam() * rhs).into()
-    }
-}
-
-impl ops::DivAssign<Vec2> for Vec2 {
-    fn div_assign(&mut self, rhs: Vec2) {
-        *self = *self * rhs
-    }
-}
-
-impl ops::DivAssign<f32> for Vec2 {
-    fn div_assign(&mut self, rhs: f32) {
-        *self = *self * rhs
-    }
-}
-
-impl ops::Neg for Vec2 {
-    type Output = Self;
-    fn neg(self) -> Self::Output {
-        Self {
-            x: -self.x,
-            y: -self.y,
-        }
+        self.0
     }
 }

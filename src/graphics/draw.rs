@@ -281,7 +281,7 @@ impl Draw {
                     .clone()
                     .unwrap_or(self.default_camera.clone()),
                 model: model_matrix(
-                    &position.into_glam(),
+                    &position,
                     rotation.unwrap_or(0.0),
                     &(*texture.size * scale.map(|x| x.into()).unwrap_or(glam::Vec2::ONE)),
                 ),
