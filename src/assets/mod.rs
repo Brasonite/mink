@@ -1,13 +1,15 @@
 use std::sync::Arc;
 
+use kira::sound::static_sound::StaticSoundData;
 use pyo3::prelude::*;
 
 use crate::{
-    assets::texture::Texture,
+    assets::{sound::Sound, texture::Texture},
     graphics::{builtin::VideoBuiltins, stack::VideoStack},
 };
 
 pub mod api;
+pub mod sound;
 pub mod texture;
 
 #[pyclass]
@@ -39,10 +41,21 @@ impl Assets {
         format!("{}/{}", self.root, path)
     }
 
+    pub fn sound(&self, path: &str) -> Sound {
+        let filepath = self.resolve_path(path);
+
+        Sound {
+            volume: 1.0,
+            speed: 1.0,
+            r#loop: false,
+            data: StaticSoundData::from_file(filepath).expect("Failed to load sound"),
+        }
+    }
+
     pub fn texture(&self, path: &str) -> Texture {
         let filepath = self.resolve_path(path);
 
-        let image = image::open(filepath).expect("Failed to load image.");
+        let image = image::open(filepath).expect("Failed to load image");
         let rgba = image.to_rgba8();
 
         let size = wgpu::Extent3d {

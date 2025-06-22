@@ -17,6 +17,7 @@ image = { version = "0.25.6", default-features = false, features = [
     "png",
     "jpeg",
 ] }
+kira = "0.10.8"
 mink_scripts = { path = "./mink_scripts" }
 mink_shaders = { path = "./mink_shaders" }
 pollster = "0.4.0"

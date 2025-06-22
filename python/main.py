@@ -4,6 +4,7 @@ import mink
 bunny: mink.Texture
 bunny_start = 0.0
 camera = mink.Camera()
+drumloop: mink.Sound
 
 
 def init():
@@ -12,7 +13,12 @@ def init():
 
 def load():
     global bunny
+    global drumloop
+
     bunny = mink.assets.texture("bunny.png")
+    drumloop = mink.assets.sound("goofy_drumloop.mp3")
+
+    mink.audio.play(drumloop)
 
 
 def update():

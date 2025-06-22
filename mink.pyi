@@ -59,13 +59,24 @@ class Camera:
     def project(self, position: Vec2, window_size: Vec2) -> Vec2: ...
     def unproject(self, position: Vec2, window_size: Vec2) -> Vec2: ...
 
+class Sound:
+    volume: float
+    speed: float
+    loop: bool
+
 class Texture:
     pass
 
 class Assets:
     def set_root(self, path: str) -> str: ...
     def resolve_path(self, path: str) -> str: ...
+    def sound(self, path: str) -> Sound: ...
     def texture(self, path: str) -> Texture: ...
+
+class Audio:
+    volume: float
+
+    def play(self, sound: Sound) -> None: ...
 
 class Draw:
     def set_camera(self, camera: Camera | None) -> None: ...
@@ -103,6 +114,7 @@ class Window:
     def set_title(self, value: str) -> None: ...
 
 assets: Assets
+audio: Audio
 draw: Draw
 input: Input
 stats: Stats
