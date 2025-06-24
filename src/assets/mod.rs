@@ -4,11 +4,12 @@ use kira::sound::static_sound::StaticSoundData;
 use pyo3::prelude::*;
 
 use crate::{
-    assets::{sound::Sound, texture::Texture},
+    assets::{music::Music, sound::Sound, texture::Texture},
     graphics::{builtin::VideoBuiltins, stack::VideoStack},
 };
 
 pub mod api;
+pub mod music;
 pub mod sound;
 pub mod texture;
 
@@ -41,13 +42,25 @@ impl Assets {
         format!("{}/{}", self.root, path)
     }
 
+    pub fn music(&self, path: &str) -> Music {
+        let filepath = self.resolve_path(path);
+
+        Music {
+            volume: 1.0,
+            speed: 1.0,
+            r#loop: false,
+            paused: false,
+            data: StaticSoundData::from_file(filepath).expect("Failed to load music"),
+            handle: None,
+        }
+    }
+
     pub fn sound(&self, path: &str) -> Sound {
         let filepath = self.resolve_path(path);
 
         Sound {
             volume: 1.0,
             speed: 1.0,
-            r#loop: false,
             data: StaticSoundData::from_file(filepath).expect("Failed to load sound"),
         }
     }

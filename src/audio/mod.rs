@@ -6,9 +6,20 @@ use kira::{
 };
 use pyo3::prelude::*;
 
-use crate::{assets::sound::Sound, math::audio::linear_to_db};
+use crate::{
+    assets::{music::Music, sound::Sound},
+    math::audio::linear_to_db,
+};
 
 pub mod api;
+
+#[derive(FromPyObject)]
+enum PlayableAudio<'a> {
+    #[pyo3(transparent)]
+    Music(Bound<'a, Music>),
+    #[pyo3(transparent)]
+    Sound(Bound<'a, Sound>),
+}
 
 #[pyclass]
 pub struct Audio {
@@ -51,9 +62,21 @@ impl Audio {
         );
     }
 
-    pub fn play(&mut self, sound: &Sound) {
-        self.manager
-            .play(sound.data.clone())
-            .expect("Failed to play sound");
+    fn play(&mut self, audio: PlayableAudio) {
+        match audio {
+            PlayableAudio::Music(music) => {
+                let handle = self
+                    .manager
+                    .play(music.borrow().data.clone())
+                    .expect("Failed to play music");
+
+                music.borrow_mut().handle = Some(handle);
+            }
+            PlayableAudio::Sound(sound) => {
+                self.manager
+                    .play(sound.borrow().data.clone())
+                    .expect("Failed to play sound");
+            }
+        }
     }
 }

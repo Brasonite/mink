@@ -8,7 +8,6 @@ use crate::math::audio::linear_to_db;
 pub struct Sound {
     pub volume: f32,
     pub speed: f32,
-    pub r#loop: bool,
     pub data: StaticSoundData,
 }
 
@@ -34,20 +33,5 @@ impl Sound {
     pub fn set_speed(&mut self, value: f32) {
         self.speed = value;
         self.data = self.data.playback_rate(value as f64);
-    }
-
-    #[getter]
-    pub fn get_loop(&self) -> bool {
-        self.r#loop
-    }
-
-    #[setter]
-    pub fn set_loop(&mut self, value: bool) {
-        self.r#loop = value;
-        self.data = if value {
-            self.data.loop_region(..)
-        } else {
-            self.data.loop_region(None)
-        };
     }
 }
