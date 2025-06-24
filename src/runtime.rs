@@ -14,6 +14,7 @@ use winit::{
 
 use crate::{
     assets::Assets,
+    audio::Audio,
     graphics::{builtin::VideoBuiltins, draw::Draw, stack::VideoStack},
     input::Input,
     stats::Stats,
@@ -36,6 +37,7 @@ struct Runtime<'a> {
     builtins: Option<Arc<VideoBuiltins>>,
 
     global_assets: Option<Bound<'a, Assets>>,
+    global_audio: Option<Bound<'a, Audio>>,
     global_draw: Option<Bound<'a, Draw>>,
     global_input: Option<Bound<'a, Input>>,
     global_stats: Option<Bound<'a, Stats>>,
@@ -64,6 +66,7 @@ impl<'a> Runtime<'a> {
             video: None,
             builtins: None,
             global_assets: None,
+            global_audio: None,
             global_draw: None,
             global_input: None,
             global_stats: None,
@@ -90,6 +93,7 @@ impl<'a> ApplicationHandler for Runtime<'a> {
         let global_assets = Assets::new(&video, Arc::clone(&builtins))
             .into_pyobject(self.py)
             .unwrap();
+        let global_audio = Audio::new().into_pyobject(self.py).unwrap();
         let global_draw = Draw::new(&video, Arc::clone(&builtins))
             .into_pyobject(self.py)
             .unwrap();
@@ -103,6 +107,7 @@ impl<'a> ApplicationHandler for Runtime<'a> {
         {
             let locals = PyDict::new(self.py);
             locals.set_item("global_assets", &global_assets).unwrap();
+            locals.set_item("global_audio", &global_audio).unwrap();
             locals.set_item("global_draw", &global_draw).unwrap();
             locals.set_item("global_input", &global_input).unwrap();
             locals.set_item("global_stats", &global_stats).unwrap();
@@ -128,6 +133,7 @@ impl<'a> ApplicationHandler for Runtime<'a> {
         self.builtins = Some(builtins);
 
         self.global_assets = Some(global_assets);
+        self.global_audio = Some(global_audio);
         self.global_draw = Some(global_draw);
         self.global_input = Some(global_input);
         self.global_stats = Some(global_stats);
