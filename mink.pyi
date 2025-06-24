@@ -121,6 +121,8 @@ stats: Stats
 time: Time
 window: Window
 
+def linear_to_db(value: float) -> float: ...
+def db_to_linear(value: float) -> float: ...
 def run(
     init_fn: Callable,
     load_fn: Callable,
